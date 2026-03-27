@@ -65,10 +65,10 @@ def upload():
     # 🧪 Debug
     print("Files:", os.listdir("."))
 
-    if not os.path.exists("video.mp4"):
+    if not os.path.exists("final.mp4"):
         raise FileNotFoundError("❌ video.mp4 not found!")
 
-    size = os.path.getsize("video.mp4")
+    size = os.path.getsize("final.mp4")
     print("📦 File size:", size)
 
     if size < 1000:
@@ -91,7 +91,7 @@ def upload():
 
     # 🚀 Resumable upload (fixed chunk size for stability)
     media = googleapiclient.http.MediaFileUpload(
-        "video.mp4",
+        "final.mp4",
         chunksize=10 * 1024 * 1024,  # 10MB chunks (better than -1)
         resumable=True
     )
