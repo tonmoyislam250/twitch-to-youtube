@@ -13,7 +13,7 @@ unzip TwitchDownloaderCLI-1.56.4-Linux-x64.zip -d bins/
 chmod +x bins/TwitchDownloaderCLI
 
 # Install FFmpeg if not present
-./TwitchDownloaderCLI ffmpeg --download --output bins/
+./bins/TwitchDownloaderCLI ffmpeg --download --output bins/
 chmod +x ffmpeg
 
 # Download video
