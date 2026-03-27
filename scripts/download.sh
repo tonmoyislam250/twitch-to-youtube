@@ -41,9 +41,6 @@ chmod +x ffmpeg
 # Download video
 ./TwitchDownloaderCLI videodownload \
   --id $VOD_ID \
-  --quality 1080p60 \
-  --threads 4 \
-  --collision Overwrite \
   -o video.mp4
 
 # Validate
