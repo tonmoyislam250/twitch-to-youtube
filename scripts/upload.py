@@ -106,7 +106,7 @@ def upload():
                 "categoryId": "20"
             },
             "status": {
-                "privacyStatus": "public",
+                "privacyStatus": "private",
                 "selfDeclaredMadeForKids": False
             }
         },
