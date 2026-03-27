@@ -1,8 +1,8 @@
-name: Daily Twitch to YouTube
+name: Twitch to YouTube
 
 on:
   schedule:
-    - cron: "0 6 * * *"   # Runs daily (UTC)
+    - cron: "0 6 * * *"
   workflow_dispatch:
 
 jobs:
@@ -10,27 +10,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install system packages
         run: |
           sudo apt-get update
           sudo apt-get install -y unzip fontconfig libfontconfig1 python3-pip
 
-      - name: Install Python libs
-        run: pip3 install google-api-python-client google-auth-oauthlib
+      - name: Install Python packages
+        run: |
+          pip3 install google-api-python-client google-auth-oauthlib google-auth
 
-      - name: Setup YouTube credentials
-        run: echo '${{ secrets.CLIENT_SECRET_JSON }}' > client_secret.json
+      - name: Setup token
+        run: |
+          echo '${{ secrets.YOUTUBE_TOKEN_JSON }}' > token.json
 
-      - name: Setup YouTube OAuth token
-        run: echo '${{ secrets.YOUTUBE_TOKEN_JSON }}' > token.json
+      - name: Debug files before download
+        run: ls -lah
 
-      - name: Download Twitch VOD
+      - name: Run downloader
         run: |
           chmod +x scripts/download.sh
           ./scripts/download.sh
+
+      - name: Debug files after download
+        run: ls -lah
 
       - name: Upload to YouTube
         run: python3 scripts/upload.py
