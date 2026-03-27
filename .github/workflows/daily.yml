@@ -22,9 +22,13 @@ jobs:
         run: |
           pip3 install google-api-python-client google-auth-oauthlib google-auth
 
+      # 🔐 Setup token
       - name: Setup token
-        run: |
-          echo '${{ secrets.YOUTUBE_TOKEN_JSON }}' > token.json
+        run: echo '${{ secrets.YOUTUBE_TOKEN_JSON }}' > token.json
+
+      # 🔐 Setup client secret (FIX)
+      - name: Setup client secret
+        run: echo '${{ secrets.CLIENT_SECRET_JSON }}' > client_secret.json
 
       - name: Debug files before download
         run: ls -lah
