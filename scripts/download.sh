@@ -13,7 +13,7 @@ fi
 
 echo "📺 VOD ID: $VOD_ID"
 
-# 📦 Install dependencies (GitHub Actions safe)
+# 📦 Ensure jq exists
 if ! command -v jq &> /dev/null; then
   echo "Installing jq..."
   sudo apt-get update -y
@@ -27,25 +27,30 @@ wget -q https://github.com/lay295/TwitchDownloader/releases/download/1.56.4/Twit
 unzip -o TwitchDownloaderCLI-1.56.4-Linux-x64.zip
 chmod +x TwitchDownloaderCLI
 
-# 📊 Get CLEAN JSON (no banner, no logs)
+# 📊 Fetch clean JSON (no banner)
 echo "📊 Fetching VOD info..."
 ./TwitchDownloaderCLI info --id "$VOD_ID" --format raw --banner false > info.json
 
-echo "===== JSON PREVIEW ====="
-cat info.json | head -n 5
+echo "===== RAW INFO PREVIEW ====="
+head -n 3 info.json
 
-# 🧠 Extract metadata (SAFE)
-TITLE=$(jq -r '.data.video.title // "Twitch Stream"' info.json)
-DATE=$(jq -r '.data.video.createdAt // "unknown"' info.json | cut -d'T' -f1)
-CHANNEL=$(jq -r '.data.video.owner.displayName // "Streamer"' info.json)
+# 🧠 Extract only JSON line (skip any remaining logs)
+CLEAN_JSON=$(grep -m 1 '^{\"data\"' info.json)
 
-# 🧼 Clean title (YouTube safe)
+if [ -z "$CLEAN_JSON" ]; then
+  echo "❌ Failed to extract valid JSON!"
+  exit 1
+fi
+
+# 🎯 Extract metadata
+TITLE=$(echo "$CLEAN_JSON" | jq -r '.data.video.title // "Twitch Stream"')
+DATE=$(echo "$CLEAN_JSON" | jq -r '.data.video.createdAt // "unknown"' | cut -d'T' -f1)
+
+# 🧼 Clean title for YouTube
 SAFE_TITLE=$(echo "$TITLE" | tr -cd '[:alnum:] _-')
-
-FINAL_TITLE="$CHANNEL - $SAFE_TITLE ($DATE)"
+FINAL_TITLE="$SAFE_TITLE ($DATE)"
 
 echo "$FINAL_TITLE" > title.txt
-
 echo "📝 Generated title: $FINAL_TITLE"
 
 # 🎬 Download FFmpeg
@@ -57,6 +62,9 @@ chmod +x ffmpeg
 echo "⬇️ Downloading video..."
 ./TwitchDownloaderCLI videodownload \
   --id "$VOD_ID" \
+  --quality 1080p60 \
+  --threads 4 \
+  --collision Overwrite \
   -o video.mp4
 
 # ✅ Validate file
