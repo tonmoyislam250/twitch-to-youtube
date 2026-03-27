@@ -17,6 +17,6 @@ chmod +x bins/TwitchDownloaderCLI
 chmod +x ffmpeg
 
 # Download video
-./TwitchDownloaderCLI videodownload --id $VOD_ID -o video.mp4
+./bins/TwitchDownloaderCLI videodownload --id $VOD_ID -o video.mp4
 
 echo "Download complete"
