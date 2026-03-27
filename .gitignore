@@ -1,0 +1,5 @@
+*.json
+*.zip
+*.mp4
+*.log
+bins/*
