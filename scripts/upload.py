@@ -56,7 +56,7 @@ def upload():
         body={
             "snippet": {
                 "title": title,
-                "description": f"Auto uploaded VOD\n\n{title}",
+                "description": f"{title}",
                 "tags": ["twitch", "vod"],
                 "categoryId": "20"
             },
