@@ -13,43 +13,47 @@ fi
 
 echo "📺 VOD ID: $VOD_ID"
 
-# ⬇️ Download TwitchDownloaderCLI
-echo "⬇️ Downloading TwitchDownloaderCLI..."
-wget -q https://github.com/lay295/TwitchDownloader/releases/download/1.56.4/TwitchDownloaderCLI-1.56.4-Linux-x64.zip
+# 📦 Install jq if missing
+if ! command -v jq &> /dev/null; then
+  echo "Installing jq..."
+  sudo apt-get update -y
+  sudo apt-get install -y jq
+fi
 
+# ⬇️ Download CLI
+wget -q https://github.com/lay295/TwitchDownloader/releases/download/1.56.4/TwitchDownloaderCLI-1.56.4-Linux-x64.zip
 unzip -o TwitchDownloaderCLI-1.56.4-Linux-x64.zip
 chmod +x TwitchDownloaderCLI
 
-# 📊 Get VOD info (this may include extra junk depending on source)
-echo "📊 Fetching VOD info..."
+# 📊 Get info (may be messy)
 ./TwitchDownloaderCLI info --id "$VOD_ID" --format raw > info.json
 
-echo "===== RAW INFO (first lines) ====="
-head -n 3 info.json
+echo "===== RAW INFO PREVIEW ====="
+head -n 5 info.json
 
-# 🧠 Extract ONLY first JSON line (fix jq error)
-CLEAN_JSON=$(head -n 1 info.json)
+# 🧠 Extract ONLY valid JSON (ignore m3u8 + extra)
+CLEAN_JSON=$(sed -n '1,/^}/p' info.json | tr -d '\000')
 
-# 🎯 Extract title + date safely
+# 🧪 Debug
+echo "===== CLEAN JSON ====="
+echo "$CLEAN_JSON"
+
+# 🎯 Extract fields safely
 TITLE=$(echo "$CLEAN_JSON" | jq -r '.data.video.title // "Twitch Stream"')
 DATE=$(echo "$CLEAN_JSON" | jq -r '.data.video.createdAt // "unknown"' | cut -d'T' -f1)
 
-# 🧼 Clean title (remove invalid filename chars)
+# 🧼 Clean title
 SAFE_TITLE=$(echo "$TITLE" | tr -cd '[:alnum:] _-')
-
 FINAL_TITLE="$SAFE_TITLE ($DATE)"
 
 echo "$FINAL_TITLE" > title.txt
+echo "📝 Title: $FINAL_TITLE"
 
-echo "📝 Generated title: $FINAL_TITLE"
-
-# 🎬 Download FFmpeg
-echo "⬇️ Downloading FFmpeg..."
+# 🎬 FFmpeg
 ./TwitchDownloaderCLI ffmpeg --download
 chmod +x ffmpeg
 
 # 🎥 Download video
-echo "⬇️ Downloading video..."
 ./TwitchDownloaderCLI videodownload \
   --id "$VOD_ID" \
   --quality 1080p60 \
@@ -57,20 +61,19 @@ echo "⬇️ Downloading video..."
   --collision Overwrite \
   -o video.mp4
 
-# ✅ Validate file
+# ✅ Validate
 if [ ! -f video.mp4 ]; then
   echo "❌ video.mp4 not found!"
   exit 1
 fi
 
 SIZE=$(stat -c%s "video.mp4")
-
 if [ "$SIZE" -le 1000 ]; then
-  echo "❌ video.mp4 too small → download failed!"
+  echo "❌ video too small!"
   exit 1
 fi
 
-echo "✅ Download successful!"
+echo "✅ Download successful"
 ls -lh video.mp4
 
 echo "===== END DOWNLOAD ====="
