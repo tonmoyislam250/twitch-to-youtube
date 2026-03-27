@@ -3,7 +3,6 @@ set -e
 
 echo "===== START DOWNLOAD ====="
 
-# 📥 Read VOD ID
 VOD_ID=$(cat vod.txt | tr -d '[:space:]')
 
 if [ -z "$VOD_ID" ]; then
@@ -13,56 +12,37 @@ fi
 
 echo "📺 VOD ID: $VOD_ID"
 
-# 📦 Ensure jq exists
+# Ensure jq exists
 if ! command -v jq &> /dev/null; then
-  echo "Installing jq..."
   sudo apt-get update -y
   sudo apt-get install -y jq
 fi
 
-# ⬇️ Download TwitchDownloaderCLI
-echo "⬇️ Downloading TwitchDownloaderCLI..."
+# Download CLI
 wget -q https://github.com/lay295/TwitchDownloader/releases/download/1.56.4/TwitchDownloaderCLI-1.56.4-Linux-x64.zip
-
 unzip -o TwitchDownloaderCLI-1.56.4-Linux-x64.zip
 chmod +x TwitchDownloaderCLI
 
-# 📊 Fetch clean JSON (no banner)
-echo "📊 Fetching VOD info..."
+# Get clean JSON
 ./TwitchDownloaderCLI info --id "$VOD_ID" --format raw --banner false > info.json
 
-echo "===== RAW INFO PREVIEW ====="
-head -n 3 info.json
-
-# 🧠 Extract only JSON line (skip any remaining logs)
 CLEAN_JSON=$(grep -m 1 '^{\"data\"' info.json)
 
-if [ -z "$CLEAN_JSON" ]; then
-  echo "❌ Failed to extract valid JSON!"
-  exit 1
-fi
-
-# 🎯 Extract metadata
 TITLE=$(echo "$CLEAN_JSON" | jq -r '.data.video.title // "Twitch Stream"')
 DATE=$(echo "$CLEAN_JSON" | jq -r '.data.video.createdAt // "unknown"' | cut -d'T' -f1)
 
-# 🧼 Clean title
 SAFE_TITLE=$(echo "$TITLE" | tr -cd '[:alnum:] _-')
-TRIMMED_TITLE=$(echo "$SAFE_TITLE" | cut -c1-60)
-
-# 📅 Add date AFTER trimming
+TRIMMED_TITLE=$(echo "$SAFE_TITLE" | cut -c1-60 | sed 's/ [^ ]*$//')
 FINAL_TITLE="$TRIMMED_TITLE ($DATE)"
 
 echo "$FINAL_TITLE" > title.txt
-echo "📝 Generated title: $FINAL_TITLE"
+echo "📝 Title: $FINAL_TITLE"
 
-# 🎬 Download FFmpeg
-echo "⬇️ Downloading FFmpeg..."
+# Download FFmpeg
 ./TwitchDownloaderCLI ffmpeg --download
 chmod +x ffmpeg
 
-# 🎥 Download video
-echo "⬇️ Downloading video..."
+# Download video
 ./TwitchDownloaderCLI videodownload \
   --id "$VOD_ID" \
   --quality 1080p60 \
@@ -70,20 +50,41 @@ echo "⬇️ Downloading video..."
   --collision Overwrite \
   -o video.mp4
 
-# ✅ Validate file
-if [ ! -f video.mp4 ]; then
-  echo "❌ video.mp4 not found!"
+# Download chat
+./TwitchDownloaderCLI chatdownload \
+  --id "$VOD_ID" \
+  --embed-images \
+  -o chat.json
+
+# Render chat
+./TwitchDownloaderCLI chatrender \
+  -i chat.json \
+  -o chat.mp4 \
+  -w 400 \
+  -h 800 \
+  --framerate 30
+
+# Overlay chat (BOTTOM RIGHT)
+echo "🎬 Overlaying chat..."
+
+./ffmpeg -i video.mp4 -i chat.mp4 \
+-filter_complex "[1:v]format=rgba,colorchannelmixer=aa=0.8[chat];[0:v][chat]overlay=W-w-20:H-h-20" \
+-c:a copy final.mp4
+
+# Validate output
+if [ ! -f final.mp4 ]; then
+  echo "❌ Overlay failed!"
   exit 1
 fi
 
-SIZE=$(stat -c%s "video.mp4")
+SIZE=$(stat -c%s "final.mp4")
 
 if [ "$SIZE" -le 1000 ]; then
-  echo "❌ video.mp4 too small → download failed!"
+  echo "❌ final.mp4 too small!"
   exit 1
 fi
 
-echo "✅ Download successful!"
-ls -lh video.mp4
+echo "✅ Final video ready!"
+ls -lh final.mp4
 
 echo "===== END DOWNLOAD ====="
