@@ -24,6 +24,9 @@ jobs:
       - name: Setup YouTube credentials
         run: echo '${{ secrets.CLIENT_SECRET_JSON }}' > client_secret.json
 
+      - name: Setup YouTube OAuth token
+        run: echo '${{ secrets.YOUTUBE_TOKEN_JSON }}' > token.json
+
       - name: Download Twitch VOD
         run: |
           chmod +x scripts/download.sh
