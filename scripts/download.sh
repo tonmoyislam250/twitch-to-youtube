@@ -46,9 +46,12 @@ fi
 TITLE=$(echo "$CLEAN_JSON" | jq -r '.data.video.title // "Twitch Stream"')
 DATE=$(echo "$CLEAN_JSON" | jq -r '.data.video.createdAt // "unknown"' | cut -d'T' -f1)
 
-# 🧼 Clean title for YouTube
+# 🧼 Clean title
 SAFE_TITLE=$(echo "$TITLE" | tr -cd '[:alnum:] _-')
-FINAL_TITLE="$SAFE_TITLE ($DATE)"
+TRIMMED_TITLE=$(echo "$SAFE_TITLE" | cut -c1-60)
+
+# 📅 Add date AFTER trimming
+FINAL_TITLE="$TRIMMED_TITLE ($DATE)"
 
 echo "$FINAL_TITLE" > title.txt
 echo "📝 Generated title: $FINAL_TITLE"
