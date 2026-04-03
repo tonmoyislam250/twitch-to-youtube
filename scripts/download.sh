@@ -50,27 +50,6 @@ chmod +x ffmpeg
   --collision Overwrite \
   -o video.mp4
 
-# Download chat
-./TwitchDownloaderCLI chatdownload \
-  --id "$VOD_ID" \
-  --embed-images \
-  -o chat.json
-
-# Render chat
-./TwitchDownloaderCLI chatrender \
-  -i chat.json \
-  -o chat.mp4 \
-  -w 400 \
-  -h 800 \
-  --framerate 30
-
-# Overlay chat (BOTTOM RIGHT)
-echo "🎬 Overlaying chat..."
-
-./ffmpeg -i video.mp4 -i chat.mp4 \
--filter_complex "[1:v]format=rgba,colorchannelmixer=aa=0.8[chat];[0:v][chat]overlay=W-w-20:H-h-20" \
--c:a copy final.mp4
-
 # Validate output
 if [ ! -f final.mp4 ]; then
   echo "❌ Overlay failed!"
