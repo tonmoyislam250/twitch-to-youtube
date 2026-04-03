@@ -48,7 +48,7 @@ chmod +x ffmpeg
   --quality 1080p60 \
   --threads 4 \
   --collision Overwrite \
-  -o video.mp4
+  -o final.mp4
 
 # Validate output
 if [ ! -f final.mp4 ]; then
